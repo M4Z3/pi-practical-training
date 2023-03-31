@@ -1,0 +1,97 @@
+{
+	"info": {
+		"_postman_id": "1d466d0d-cc96-4fe6-a740-712e1a82474d",
+		"name": "New Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "610961"
+	},
+	"item": [
+		{
+			"name": "start pc sale wf - available",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"messageName\" : \"Message_start_personal_computer_sale\",\n  \"processVariables\" : {\n    \"device_type\" : {\"value\" : \"available_pc\", \"type\": \"String\"}\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/engine-rest/message",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"engine-rest",
+						"message"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "start pc sale wf - out of stock",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"messageName\" : \"Message_start_personal_computer_sale\",\n  \"processVariables\" : {\n    \"device_type\" : {\"value\" : \"out_of_stock_pc\", \"type\": \"String\"}\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/engine-rest/message",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"engine-rest",
+						"message"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "start pc sale wf - not functional",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"messageName\" : \"Message_start_personal_computer_sale\",\n  \"processVariables\" : {\n    \"device_type\" : {\"value\" : \"out_of_stock_pc\", \"type\": \"String\"}\n  }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/engine-rest/message",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"engine-rest",
+						"message"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
