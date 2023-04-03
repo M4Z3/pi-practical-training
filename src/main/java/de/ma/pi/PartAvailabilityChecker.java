@@ -19,6 +19,8 @@ public class PartAvailabilityChecker  implements JavaDelegate {
     public static final String OUT_OF_STOCK_PC = "out_of_stock_pc";
     public static final String NOT_FUNCTIONAL_PC = "not_functional_pc";
     public static final String OUTPUT_PARTS_AVAILABLE = "parts_available";
+    public static final String ANSWER_NO = "no";
+    public static final String ANSWER_YES = "yes";
     Map<String, Integer> deviceStorage = Stream.of(
             new AbstractMap.SimpleImmutableEntry<>(AVAILABLE_PC, 1),
             new AbstractMap.SimpleImmutableEntry<>(OUT_OF_STOCK_PC, 0),
@@ -35,9 +37,9 @@ public class PartAvailabilityChecker  implements JavaDelegate {
         logger.debug("input device stored: " + integer);
 
         if (integer != null && integer > 0) {
-            delegateExecution.setVariable(OUTPUT_PARTS_AVAILABLE, "yes");
+            delegateExecution.setVariable(OUTPUT_PARTS_AVAILABLE, ANSWER_YES);
         } else {
-            delegateExecution.setVariable(OUTPUT_PARTS_AVAILABLE, "no");
+            delegateExecution.setVariable(OUTPUT_PARTS_AVAILABLE, ANSWER_NO);
         }
 
     }
