@@ -1,6 +1,7 @@
 package de.ma.pi;
 
 import org.apache.ibatis.logging.LogFactory;
+import org.assertj.core.util.Maps;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
@@ -13,6 +14,7 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 
+import static de.ma.pi.PartAvailabilityChecker.*;
 import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.*;
 
 
@@ -42,57 +44,65 @@ public class PersonalComputerSalesUnitTest {
 
   @Test
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
-  public void testHappyPath() throws SQLException {
+  public void test_everything_available_and_functional() throws SQLException {
     ProcessInstance processInstance = runtimeService()
-        .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
-//        .setVariable(PROCESS_VAR_DEVICE_TYPE, AVAILABLE_PC)
-        .execute();
+        .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, AVAILABLE_PC));
 
     assertThat(processInstance).hasPassed("Activity_create_offer");
-
     assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
-    complete(task(), withVariables("order_accepted", "answer_yes"));
 
+    complete(task(), withVariables("order_accepted", "answer_yes"));
     assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
-    assertThat(processInstance).hasNotPassed("Gateway_parts_not_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+    assertThat(processInstance).hasNotPassed("Usertask_call_alternative_parts");
+
+    // execute Servicetask_test_rig
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_test_rig");
     assertThat(processInstance).hasPassed("Activity_ship_rig");
     assertThat(processInstance).hasPassed("Activity_send_invoice");
-
     assertThat(processInstance).isWaitingAt("Usertask_check_payment");
-    complete(task(), withVariables("customer_paid", "answer_yes"));
 
+    complete(task(), withVariables("customer_paid", "answer_yes"));
     assertThat(processInstance).hasNotPassed("Activity_start_dept_collection");
     assertThat(processInstance).isEnded();
-
   }
 
   @Test
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
   public void test_customer_accepts_revised_offer() throws SQLException {
     ProcessInstance processInstance = runtimeService()
-        .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
-        .execute();
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, AVAILABLE_PC));
 
     assertThat(processInstance).hasPassed("Activity_create_offer");
-
     assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
+
     complete(task(), withVariables("order_accepted", "answer_no", "offer_requested", "answer_yes"));
     assertThat(processInstance).hasNotPassed("Flow_new_offer_requested_no");
+    assertThat(processInstance).isNotEnded();
     assertThat(processInstance).hasPassed("Activity_revise_offer");
-    complete(task(), withVariables("order_accepted", "answer_yes"));
 
+    complete(task(), withVariables("order_accepted", "answer_yes"));
     assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
-    assertThat(processInstance).hasNotPassed("Gateway_parts_not_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+    assertThat(processInstance).hasNotPassed("Usertask_call_alternative_parts");
+
+    // execute Servicetask_test_rig
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_test_rig");
     assertThat(processInstance).hasPassed("Activity_ship_rig");
     assertThat(processInstance).hasPassed("Activity_send_invoice");
-
     assertThat(processInstance).isWaitingAt("Usertask_check_payment");
-    complete(task(), withVariables("customer_paid", "answer_yes"));
 
+    complete(task(), withVariables("customer_paid", "answer_yes"));
     assertThat(processInstance).hasNotPassed("Activity_start_dept_collection");
     assertThat(processInstance).isEnded();
 
@@ -102,13 +112,14 @@ public class PersonalComputerSalesUnitTest {
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
   public void test_customer_dont_accepts_revised_offer() throws SQLException {
     ProcessInstance processInstance = runtimeService()
-            .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
-            .execute();
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, AVAILABLE_PC));
+
 
     assertThat(processInstance).hasPassed("Activity_create_offer");
-
     assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
+
     complete(task(), withVariables("order_accepted", "answer_no", "offer_requested", "answer_no"));
+    assertThat(processInstance).hasNotPassed("Flow_new_offer_requested_yes");
     assertThat(processInstance).isEnded();
 
   }
@@ -117,34 +128,120 @@ public class PersonalComputerSalesUnitTest {
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
   public void test_customer_dont_pay() throws SQLException {
     ProcessInstance processInstance = runtimeService()
-            .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
-            .execute();
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, AVAILABLE_PC));
+
 
     assertThat(processInstance).hasPassed("Activity_create_offer");
-
     assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
-    complete(task(), withVariables("order_accepted", "answer_yes"));
 
+    complete(task(), withVariables("order_accepted", "answer_yes"));
     assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
-    assertThat(processInstance).hasNotPassed("Gateway_parts_not_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+    assertThat(processInstance).hasNotPassed("Usertask_call_alternative_parts");
+
+    // execute Servicetask_test_rig
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_test_rig");
     assertThat(processInstance).hasPassed("Activity_ship_rig");
     assertThat(processInstance).hasPassed("Activity_send_invoice");
-
     assertThat(processInstance).isWaitingAt("Usertask_check_payment");
-    complete(task(), withVariables("customer_paid", "answer_no"));
 
-    assertThat(processInstance).hasNotPassed("Flow_customer_paid_yes");
+    complete(task(), withVariables("customer_paid", "answer_no"));
     assertThat(processInstance).hasPassed("Activity_start_dept_collection");
     assertThat(processInstance).isEnded();
 
   }
 
+  @Test
+  @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
+  public void test_order_out_of_stock_pc() throws SQLException {
+    ProcessInstance processInstance = runtimeService()
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, OUT_OF_STOCK_PC));
+
+
+    assertThat(processInstance).hasPassed("Activity_create_offer");
+    assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
+
+    complete(task(), withVariables("order_accepted", "answer_yes"));
+    assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
+    assertThat(processInstance).isWaitingAt("Usertask_call_alternative_parts");
+
+    complete(task(), withVariables("order_cancelled", "answer_no", "new_device_type", AVAILABLE_PC));
+    assertThat(processInstance).hasNotPassed("Flow_order_cancelled_yes");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+
+    // execute Servicetask_test_rig
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_test_rig");
+    assertThat(processInstance).hasPassed("Activity_ship_rig");
+    assertThat(processInstance).hasPassed("Activity_send_invoice");
+    assertThat(processInstance).isWaitingAt("Usertask_check_payment");
+
+    complete(task(), withVariables("customer_paid", "answer_yes"));
+    assertThat(processInstance).hasNotPassed("Activity_start_dept_collection");
+    assertThat(processInstance).isEnded();
+
+  }
+
+  @Test
+  @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
+  public void test_order_not_functional_pc() throws SQLException {
+    ProcessInstance processInstance = runtimeService()
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, NOT_FUNCTIONAL_PC));
+
+    assertThat(processInstance).hasPassed("Activity_create_offer");
+    assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
+
+    complete(task(), withVariables("order_accepted", "answer_yes"));
+    assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+    assertThat(processInstance).hasNotPassed("Usertask_call_alternative_parts");
+
+    // execute Servicetask_test_rig
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_test_rig");
+    assertThat(processInstance).hasNotPassed("Activity_ship_rig");
+
+    complete(task(), withVariables("order_cancelled", "answer_no", "new_device_type", AVAILABLE_PC));
+    assertThat(processInstance).hasNotPassed("Flow_order_cancelled_yes");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
+    assertThat(processInstance).hasPassed("Activity_build_rig");
+
+    // execute Servicetask_test_rig
+    execute(job());
+    assertThat(processInstance).hasPassed("Servicetask_test_rig");
+    assertThat(processInstance).hasPassed("Activity_ship_rig");
+    assertThat(processInstance).hasPassed("Activity_send_invoice");
+    assertThat(processInstance).isWaitingAt("Usertask_check_payment");
+
+    complete(task(), withVariables("customer_paid", "answer_yes"));
+    assertThat(processInstance).hasNotPassed("Activity_start_dept_collection");
+    assertThat(processInstance).isEnded();
+  }
 
   @Test
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
   public void test_parts_not_available_order_canceled() {
+    // der prozess muss mit der PROCESS_VAR_DEVICE_TYPE gestartet werden, sonst schlägt er bei dem aufruf im workflow fehl, da sie null ist -> siehe oben
     ProcessInstance processInstance = runtimeService()
             .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
             .execute();
