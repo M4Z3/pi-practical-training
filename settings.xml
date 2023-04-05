@@ -63,17 +63,48 @@ under the License.
     -->
   </proxies>
 
+  <activeProfiles>
+    <activeProfile>github</activeProfile>
+  </activeProfiles>
+
+  <profiles>
+    <profile>
+      <id>github</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/USERNAME</url>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+
+  <servers>
+    <server>
+      <id>github</id>
+      <username>USERNAME</username>
+      <password>TOKEN</password>
+    </server>
+  </servers>
+
   <!-- servers
    | This is a list of authentication profiles, keyed by the server-id used within the system.
    | Authentication profiles can be used whenever maven must make a connection to a remote server.
    |-->
-  <servers>
-    <server>
-      <id>camunda-bpm-nexus-ee</id>
-      <username>YOUR_USERNAME</username>
-      <password>YOUR_PASSWORD</password>
-    </server>
-  </servers>
+<!--  <servers>-->
+<!--    <server>-->
+<!--      <id>camunda-bpm-nexus-ee</id>-->
+<!--      <username>YOUR_USERNAME</username>-->
+<!--      <password>YOUR_PASSWORD</password>-->
+<!--    </server>-->
+<!--  </servers>-->
 
   <!-- mirrors
    | This is a list of mirrors to be used in downloading artifacts from remote repositories.
