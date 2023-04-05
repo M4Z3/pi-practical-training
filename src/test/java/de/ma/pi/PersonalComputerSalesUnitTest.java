@@ -241,20 +241,22 @@ public class PersonalComputerSalesUnitTest {
   @Test
   @Deployment(resources = PERSONAL_COMPUTER_SALES_BPMN) // only required for process test coverage
   public void test_parts_not_available_order_canceled() {
-    // der prozess muss mit der PROCESS_VAR_DEVICE_TYPE gestartet werden, sonst schlägt er bei dem aufruf im workflow fehl, da sie null ist -> siehe oben
     ProcessInstance processInstance = runtimeService()
-            .createProcessInstanceByKey(ProcessConstants.PERSONAL_COMPUTER_SALES_PROCESS_DEFINITION_KEY)
-            .execute();
+            .startProcessInstanceByMessage("Message_start_personal_computer_sale", Maps.newHashMap(PROCESS_VAR_DEVICE_TYPE, OUT_OF_STOCK_PC));
 
     assertThat(processInstance).hasPassed("Activity_create_offer");
 
     assertThat(processInstance).isWaitingAt("Usertask_call_present_offer");
     complete(task(), withVariables("order_accepted", "answer_yes"));
     assertThat(processInstance).hasPassed("Activity_create_order");
+
+    // execute Servicetask_check_parts_available
+    execute(job());
     assertThat(processInstance).hasPassed("Servicetask_check_parts_available");
-    complete(task(), withVariables("Servicetask_check_parts_available", "answer_no"));
-    assertThat(processInstance).hasPassed("Usertask_offer_alternative_part_selection");
-    complete(task(), withVariables("Usertask_offer_alternative_part_selection", "answer_customer_cancels"));
+    assertThat(processInstance).hasNotPassed("Activity_build_rig");
+    complete(task(), withVariables("order_cancelled", "answer_yes", "new_device_type", AVAILABLE_PC));
+    assertThat(processInstance).hasPassed("Usertask_call_alternative_parts");
+
 
     assertThat(processInstance).isEnded();
   }
